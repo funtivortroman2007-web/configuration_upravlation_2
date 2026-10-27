@@ -42,7 +42,10 @@ output_file = graph.png
             result = main(["--config", "nonexistent-config.ini"])
 
         self.assertEqual(result, 2)
-        self.assertIn("Ошибка конфигурации", output.getvalue())
+        self.assertIn(
+            "Ошибка конфигурации",
+            output.getvalue(),
+        )
 
 
 if __name__ == "__main__":

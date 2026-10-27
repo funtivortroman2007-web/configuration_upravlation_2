@@ -33,7 +33,8 @@ class LoadConfigTests(unittest.TestCase):
 
     def test_test_repository_must_be_an_existing_file(self) -> None:
         content = VALID_CONFIG.replace(
-            "repository = https://example.org/packages", "repository = missing.json"
+            "repository = https://example.org/packages",
+            "repository = missing.json",
         ).replace("test_mode = false", "test_mode = true")
         with tempfile.TemporaryDirectory() as directory:
             path = self.write_config(directory, content)

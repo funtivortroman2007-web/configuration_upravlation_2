@@ -9,7 +9,9 @@ from src.config import ConfigError, load_config
 
 def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
-        description="Проверить конфигурацию визуализатора графа зависимостей."
+        description=(
+            "Проверить конфигурацию визуализатора графа зависимостей."
+        )
     )
     parser.add_argument(
         "-c",
@@ -22,7 +24,10 @@ def main(argv: Sequence[str] | None = None) -> int:
     try:
         config = load_config(args.config)
     except ConfigError as error:
-        print(f"Ошибка конфигурации:\n{error}", file=sys.stderr)
+        print(
+            f"Ошибка конфигурации:\n{error}",
+            file=sys.stderr,
+        )
         return 2
 
     print(f"package_name={config.package_name}")
