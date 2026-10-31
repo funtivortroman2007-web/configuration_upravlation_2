@@ -59,7 +59,6 @@ def _load_index(repository: str, test_mode: bool) -> str:
     except (OSError, EOFError) as error:
         raise RepositoryError(f"Не удалось прочитать ответ {index_url}: {error}") from error
 
-
 def get_direct_dependencies(
     repository: str,
     package_name: str,
