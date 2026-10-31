@@ -6,7 +6,11 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from src.apk_repository import RepositoryError, get_direct_dependencies
+from src.apk_repository import (
+    RepositoryError,
+    get_direct_dependencies,
+    get_package_graph,
+)
 
 
 INDEX_TEXT = """\
@@ -125,6 +129,27 @@ class ApkRepositoryTests(unittest.TestCase):
             )
 
         self.assertEqual(dependencies, [])
+
+    def test_package_graph_resolves_unique_provided_dependencies(self) -> None:
+        index = """\
+P:demo
+V:1-r0
+D:so:libc.musl-x86_64.so.1
+
+P:musl
+V:1-r0
+p:so:libc.musl-x86_64.so.1=1
+D:kernel
+
+P:kernel
+V:1-r0
+"""
+        with patch("src.apk_repository._load_index", return_value=index):
+            graph = get_package_graph("https://example.org/repository", "demo", "1-r0")
+
+        self.assertEqual(graph["demo"], ["musl"])
+        self.assertEqual(graph["musl"], ["kernel"])
+        self.assertEqual(graph["kernel"], [])
 
 
 if __name__ == "__main__":
