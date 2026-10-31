@@ -6,6 +6,8 @@ import tarfile
 from urllib.error import URLError
 from urllib.request import urlopen
 
+from src.dependency_graph import DependencyGraph, parse_dependency_names
+
 
 class RepositoryError(ValueError):
     """Raised when an APK repository cannot provide the requested package."""
@@ -79,3 +81,52 @@ def get_direct_dependencies(
     raise RepositoryError(
         f"Пакет {package_name} версии {version} не найден в репозитории."
     )
+
+
+def get_package_graph(
+    repository: str,
+    package_name: str,
+    version: str,
+) -> DependencyGraph:
+    """Read package dependencies from APKINDEX for recursive graph traversal."""
+    index_text = _load_index(repository, test_mode=False)
+    package_records: dict[str, tuple[str, str]] = {}
+    provided_by: dict[str, set[str]] = {}
+    root_record: tuple[str, str] | None = None
+
+    for entry in index_text.strip().split("\n\n"):
+        fields: dict[str, str] = {}
+        for line in entry.splitlines():
+            if len(line) >= 2 and line[1] == ":":
+                fields[line[0]] = line[2:].strip()
+
+        name = fields.get("P")
+        if not name:
+            continue
+        record = (
+            fields.get("D", ""),
+            fields.get("p", ""),
+        )
+        package_records[name] = record
+        if fields.get("V") == version and name == package_name:
+            root_record = record
+        for provided_name in parse_dependency_names(fields.get("p", "")):
+            provided_by.setdefault(provided_name, set()).add(name)
+
+    if root_record is None:
+        raise RepositoryError(
+            f"Пакет {package_name} версии {version} не найден в репозитории."
+        )
+    package_records[package_name] = root_record
+
+    package_graph: DependencyGraph = {}
+    for name, (raw_dependencies, _) in package_records.items():
+        dependencies = parse_dependency_names(raw_dependencies)
+        package_graph[name] = [
+            dependency
+            if dependency in package_records
+            or len(provided_by.get(dependency, ())) != 1
+            else next(iter(provided_by[dependency]))
+            for dependency in dependencies
+        ]
+    return package_graph
