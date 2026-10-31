@@ -4,6 +4,7 @@ import argparse
 import sys
 from collections.abc import Sequence
 
+from src.apk_repository import RepositoryError, get_direct_dependencies
 from src.config import ConfigError, load_config
 
 
@@ -30,11 +31,23 @@ def main(argv: Sequence[str] | None = None) -> int:
         )
         return 2
 
-    print(f"package_name={config.package_name}")
-    print(f"repository={config.repository}")
-    print(f"test_mode={str(config.test_mode).lower()}")
-    print(f"version={config.version}")
-    print(f"output_file={config.output_file}")
+    try:
+        dependencies = get_direct_dependencies(
+            config.repository,
+            config.package_name,
+            config.version,
+            config.test_mode,
+        )
+    except RepositoryError as error:
+        print(f"Ошибка репозитория APK:\n{error}", file=sys.stderr)
+        return 3
+
+    print(f"Прямые зависимости {config.package_name} версии {config.version}:")
+    if dependencies:
+        for dependency in dependencies:
+            print(dependency)
+    else:
+        print("(нет)")
     return 0
 
 
